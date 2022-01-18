@@ -346,33 +346,6 @@ proc msgWrite*(conf: ConfigRef; s: string, flags: MsgFlags = {}) =
       when defined(windows):
         flushFile(stderr)
 
-macro callIgnoringStyle(theProc: typed, first: typed,
-                        args: varargs[typed]): untyped =
-  let typForegroundColor = bindSym"ForegroundColor".getType
-  let typBackgroundColor = bindSym"BackgroundColor".getType
-  let typStyle = bindSym"Style".getType
-  let typTerminalCmd = bindSym"TerminalCmd".getType
-  result = newCall(theProc)
-  if first.kind != nnkNilLit: result.add(first)
-  for arg in children(args[0][1]):
-    if arg.kind == nnkNilLit: continue
-    let typ = arg.getType
-    if typ.kind != nnkEnumTy or
-       typ != typForegroundColor and
-       typ != typBackgroundColor and
-       typ != typStyle and
-       typ != typTerminalCmd:
-      result.add(arg)
-
-macro callStyledWriteLineStderr(args: varargs[typed]): untyped =
-  result = newCall(bindSym"styledWriteLine")
-  result.add(bindSym"stderr")
-  for arg in children(args[0][1]):
-    result.add(arg)
-  when false:
-    # not needed because styledWriteLine already ends with resetAttributes
-    result = newStmtList(result, newCall(bindSym"resetAttributes", bindSym"stderr"))
-
 proc log*(s: string) =
   var f: File
   if open(f, getHomeDir() / "nimsuggest.log", fmAppend):
